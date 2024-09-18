@@ -22,16 +22,16 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Restore dependencies
-        run: dotnet restore ./src/Administracion_software.sln  # Ajusta esta ruta según tu estructura de proyecto
+        run: dotnet restore ./hola_mundo.html
 
       - name: Build each project
-        run: dotnet build ./src/LAPEM.OIS.AdministracionSoftware.API/LAPEM.OIS.AdministracionSoftware.API.csproj --configuration Release
+        run: dotnet build ./hola_mundo.html --configuration Release
 
       - name: Publish Swagger UI
         run: |
-            dotnet publish ./src/LAPEM.OIS.AdministracionSoftware.API/LAPEM.OIS.AdministracionSoftware.API.csproj --configuration Release --output ./publish
+            dotnet publish ./hola_mundo.html --configuration Release --output ./publish
             mkdir -p ./publish/swagger
-            cp -r ./src/LAPEM.OIS.AdministracionSoftware.API/* ./publish/swagger/
+            cp -r ./hola_mundo.html ./publish/swagger/
             echo "Swagger files copied to ./publish/swagger"
 
 
@@ -85,7 +85,7 @@ jobs:
               include /etc/nginx/conf.d/*.conf;
               include /etc/nginx/sites-enabled/*;
             }
-          output-unix-paths: "./src/LAPEM.OIS.AdministracionSoftware.API/publish/swagger/"
+          output-unix-paths: ".hola_mundo.html/publish/swagger/"
 
     env:
       DOTNET_ROOT: /usr/share/dotnet
