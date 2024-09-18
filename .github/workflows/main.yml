@@ -1,0 +1,92 @@
+name: Dotnet Publish
+
+on:
+  push:
+    branches: [ "devel" ]
+  pull_request:
+    branches: [ "devel" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: List files in the base directory
+        run: ls -R . # Verifica la estructura del directorio inicial
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore ./src/Administracion_software.sln  # Ajusta esta ruta según tu estructura de proyecto
+
+      - name: Build each project
+        run: dotnet build ./src/LAPEM.OIS.AdministracionSoftware.API/LAPEM.OIS.AdministracionSoftware.API.csproj --configuration Release
+
+      - name: Publish Swagger UI
+        run: |
+            dotnet publish ./src/LAPEM.OIS.AdministracionSoftware.API/LAPEM.OIS.AdministracionSoftware.API.csproj --configuration Release --output ./publish
+            mkdir -p ./publish/swagger
+            cp -r ./src/LAPEM.OIS.AdministracionSoftware.API/* ./publish/swagger/
+            echo "Swagger files copied to ./publish/swagger"
+
+
+      - name: Verify build outputs
+        run: ls -R ./publish/swagger
+        # Verifica que los archivos estén presentes antes de proceder con la publicación
+
+      - name: Publish to GitHub Pages
+        uses: crazy-max/ghaction-github-pages@v4.0.0
+        with:
+          build_dir: ./publish/swagger/  # Asegúrate de que el directorio de publicación contenga el index.html de Swagger
+          domain: github.com
+          target_branch: gh-pages
+          keep_history: false
+          allow_empty_commit: true
+          absolute_build_dir: false
+          follow_symlinks: false
+          jekyll: false
+          dry_run: false
+          verbose: false
+
+      - name: Setup NGINX service for Linux/macOS/Windows
+        uses: nyurik/action-setup-nginx@v1.1
+        with:
+          port: 7211
+          conf-file-text: |
+            user www-data;
+            worker_processes auto;
+            pid /run/nginx.pid;
+
+            events {
+              worker_connections 1024;
+            }
+
+            http {
+              include /etc/nginx/mime.types;
+              default_type application/octet-stream;
+
+              log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                            '$status $body_bytes_sent "$http_referer" '
+                            '"$http_user_agent" "$http_x_forwarded_for"';
+
+              access_log /var/log/nginx/access.log main;
+
+              sendfile on;
+              tcp_nopush on;
+              tcp_nodelay on;
+              keepalive_timeout 65;
+              types_hash_max_size 2048;
+
+              include /etc/nginx/conf.d/*.conf;
+              include /etc/nginx/sites-enabled/*;
+            }
+          output-unix-paths: "./src/LAPEM.OIS.AdministracionSoftware.API/publish/swagger/"
+
+    env:
+      DOTNET_ROOT: /usr/share/dotnet
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
